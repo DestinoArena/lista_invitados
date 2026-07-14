@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión de Accesos — Destino Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#0d0d13;
+    --panel:#17161f;
+    --panel-alt:#1e1d29;
+    --border:#2b2938;
+    --border-soft:#211f2c;
+    --text:#f1eef7;
+    --text-muted:#948fa8;
+    --text-faint:#5f5c72;
+    --cyan:#38e1ff;
+    --magenta:#ff4d97;
+    --gold:#ffc857;
+    --purple:#a389ff;
+    --green:#43e8a0;
+    --red:#ff6b6b;
+    --font-display:'Anton', 'Arial Narrow', sans-serif;
+    --font-body:'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono', 'SFMono-Regular', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(255,77,151,0.10), transparent),
+      radial-gradient(ellipse 900px 600px at 100% 0%, rgba(56,225,255,0.08), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  a{color:inherit;}
+  ::selection{background:rgba(255,77,151,0.35);}
+
+  .wrap{max-width:1280px;margin:0 auto;}
+
+  /* HEADER */
+  header{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    flex-wrap:wrap;gap:16px;
+    margin-bottom:28px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
+  }
+  .brand-eyebrow{
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--text-muted);font-weight:600;margin-bottom:6px;
+  }
+  .brand-eyebrow b{color:var(--magenta);}
+  h1{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:clamp(28px,4vw,42px);
+    letter-spacing:.01em;
+    margin:0;
+    line-height:1;
+    text-transform:uppercase;
+  }
+  .event-name-field{
+    display:flex;flex-direction:column;gap:6px;min-width:240px;
+  }
+  .event-name-field label{font-size:11px;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;}
+  .event-name-field input{
+    background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:9px 12px;font-family:var(--font-body);font-size:14px;font-weight:600;
+    min-width:260px;
+  }
+
+  /* API KEY SETTINGS */
+  .apikey-field{
+    display:flex;flex-direction:column;gap:6px;min-width:240px;
+  }
+  .apikey-field label{
+    font-size:11px;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  .apikey-status{
+    font-size:10px;letter-spacing:0;text-transform:none;padding:1px 7px;border-radius:20px;font-weight:700;
+  }
+  .apikey-status.set{background:rgba(67,232,160,0.12);color:var(--green);border:1px solid rgba(67,232,160,0.3);}
+  .apikey-status.unset{background:rgba(255,107,107,0.1);color:#ffb3b3;border:1px solid rgba(255,107,107,0.28);}
+  .apikey-row{display:flex;gap:6px;}
+  .apikey-row input{
+    background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:9px 12px;font-family:var(--font-mono);font-size:12.5px;
+    min-width:200px;flex:1;
+  }
+  .apikey-row button{white-space:nowrap;}
+  .apikey-hint{font-size:10.5px;color:var(--text-faint);max-width:280px;line-height:1.4;}
+
+  /* STATS */
+  .stats{
+    display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;
+  }
+  .stat-chip{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;padding:12px 18px;min-width:100px;
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .stat-chip .num{font-family:var(--font-mono);font-size:24px;font-weight:600;}
+  .stat-chip .lbl{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+  .stat-chip.total .num{color:var(--purple);}
+  .stat-chip.cyan .num{color:var(--cyan);}
+  .stat-chip.magenta .num{color:var(--magenta);}
+  .stat-chip.gold .num{color:var(--gold);}
+
+  /* LAYOUT */
+  .grid{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+  }
+  .panel h2{
+    font-family:var(--font-display);
+    font-weight:400;
+    font-size:15px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    margin:0 0 16px;
+    color:var(--text);
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--magenta);display:inline-block;}
+
+  /* TABS */
+  .tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--panel-alt);padding:4px;border-radius:10px;}
+  .tab-btn{
+    flex:1;background:transparent;border:none;color:var(--text-muted);
+    padding:8px 10px;border-radius:7px;font-family:var(--font-body);font-weight:600;font-size:12.5px;
+    cursor:pointer;transition:background .15s,color .15s;text-transform:uppercase;letter-spacing:.03em;
+  }
+  .tab-btn.active{background:var(--panel);color:var(--text);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  label.field-label{
+    display:block;font-size:11px;color:var(--text-muted);text-transform:uppercase;
+    letter-spacing:.05em;margin-bottom:6px;margin-top:14px;font-weight:600;
+  }
+  label.field-label:first-child{margin-top:0;}
+
+  textarea{
+    width:100%;min-height:170px;background:var(--panel-alt);border:1px solid var(--border);
+    color:var(--text);border-radius:9px;padding:12px;font-family:var(--font-mono);font-size:12.5px;
+    resize:vertical;line-height:1.5;
+  }
+  input[type=text], select, input[type=file]{
+    width:100%;background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+    border-radius:9px;padding:10px 12px;font-family:var(--font-body);font-size:13.5px;font-weight:500;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible{
+    outline:2px solid var(--cyan);outline-offset:1px;border-color:var(--cyan);
+  }
+
+  .dropzone{
+    border:1.5px dashed var(--border);border-radius:10px;padding:22px 14px;
+    text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--cyan);background:rgba(56,225,255,0.05);}
+  .dropzone strong{color:var(--text);}
+  .dropzone input{display:none;}
+  .file-chip{
+    margin-top:10px;font-size:12.5px;color:var(--green);display:none;
+    background:rgba(67,232,160,0.08);border:1px solid rgba(67,232,160,0.25);
+    padding:7px 10px;border-radius:7px;
+  }
+
+  button.primary{
+    width:100%;margin-top:18px;
+    background:linear-gradient(135deg, var(--magenta), var(--purple));
+    color:#0d0d13;border:none;border-radius:9px;padding:12px 16px;
+    font-family:var(--font-body);font-weight:800;font-size:13.5px;letter-spacing:.02em;
+    cursor:pointer;transition:filter .15s, transform .1s;text-transform:uppercase;
+  }
+  button.primary:hover{filter:brightness(1.08);}
+  button.primary:active{transform:scale(.99);}
+  button.primary:disabled{opacity:.5;cursor:not-allowed;filter:none;}
+  button.secondary{
+    background:var(--panel-alt);border:1px solid var(--border);color:var(--text);
+    border-radius:8px;padding:9px 13px;font-family:var(--font-body);font-weight:600;font-size:12.5px;
+    cursor:pointer;transition:border-color .15s, color .15s;
+  }
+  button.secondary:hover{border-color:var(--cyan);color:var(--cyan);}
+  button.ghost{
+    background:transparent;border:1px solid var(--border-soft);color:var(--text-faint);
+    border-radius:7px;padding:5px 9px;font-size:11.5px;cursor:pointer;font-weight:600;
+  }
+  button.ghost:hover{color:var(--red);border-color:var(--red);}
+
+  .msg{
+    margin-top:12px;font-size:12.5px;padding:9px 11px;border-radius:8px;display:none;line-height:1.4;
+  }
+  .msg.show{display:block;}
+  .msg.error{background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.3);color:#ffb3b3;}
+  .msg.ok{background:rgba(67,232,160,0.08);border:1px solid rgba(67,232,160,0.3);color:#a8f5d6;}
+  .msg.info{background:rgba(163,137,255,0.08);border:1px solid rgba(163,137,255,0.3);color:#d3c7ff;}
+
+  .hint{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
+
+  /* TABLE */
+  .table-toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .table-toolbar .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+  table{width:100%;border-collapse:collapse;min-width:820px;}
+  thead th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text-muted);background:var(--panel-alt);padding:11px 12px;
+    border-bottom:1px solid var(--border);position:sticky;top:0;font-weight:700;
+  }
+  tbody td{padding:7px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle;}
+  tbody tr:hover{background:rgba(255,255,255,0.015);}
+  tbody tr.dup td{background:rgba(255,200,87,0.04);}
+  td input[type=text]{
+    background:transparent;border:1px solid transparent;color:var(--text);
+    padding:6px 7px;border-radius:6px;font-size:13px;width:100%;
+    font-family:var(--font-body);
+  }
+  td input[type=text]:hover{border-color:var(--border);}
+  td input.mono{font-family:var(--font-mono);font-size:12.5px;}
+  td input.tipo-input{font-family:var(--font-body);font-weight:700;font-size:12px;text-transform:uppercase;}
+  .row-idx{color:var(--text-faint);font-family:var(--font-mono);font-size:11.5px;width:28px;}
+  .dup-badge{
+    font-size:9.5px;color:var(--gold);border:1px solid rgba(255,200,87,0.4);
+    padding:1px 6px;border-radius:20px;margin-left:6px;white-space:nowrap;font-weight:700;letter-spacing:.03em;
+  }
+  .tipo-cell{position:relative;}
+  .tipo-cell::before{
+    content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;
+    background:var(--tag-color, var(--text-faint));
+  }
+  .tipo-cell input{padding-left:12px;}
+
+  .empty-state{
+    padding:50px 20px;text-align:center;color:var(--text-faint);
+  }
+  .empty-state .big{font-family:var(--font-display);font-size:22px;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;}
+
+  footer.note{
+    margin-top:30px;font-size:11.5px;color:var(--text-faint);text-align:center;line-height:1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+
+  /* CREDENTIALS VIEW */
+  #credentialsView{display:none;}
+  #credentialsView.active{display:block;}
+  .cred-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+  .cred-toolbar h2{font-family:var(--font-display);text-transform:uppercase;font-size:20px;font-weight:400;margin:0;}
+  .cred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;}
+  .cred-card{
+    background:linear-gradient(160deg, var(--panel-alt), var(--panel));
+    border:1px solid var(--border);border-radius:16px;
+    padding:26px 16px 18px;position:relative;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .cred-card::before{
+    content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:18px;height:18px;border-radius:50%;background:var(--bg);border:2px solid var(--border);
+  }
+  .cred-eyebrow{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);font-weight:700;}
+  .cred-event{font-size:10.5px;color:var(--text-faint);margin-bottom:4px;text-align:center;}
+  .cred-tipo-tag{
+    font-family:var(--font-body);font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.03em;
+    padding:4px 12px;border-radius:20px;color:#0d0d13;background:var(--tag-bg,var(--text-faint));margin-bottom:2px;
+  }
+  .cred-name{font-family:var(--font-display);font-size:19px;text-transform:uppercase;text-align:center;line-height:1.1;margin:2px 0;}
+  .cred-detail{font-size:11px;color:var(--text-muted);text-align:center;}
+  .cred-qr{margin-top:8px;background:#fff;padding:8px;border-radius:10px;line-height:0;}
+
+  @media print{
+    body{padding:0;background:#fff;}
+    body *{visibility:hidden;}
+    #credentialsView, #credentialsView *{visibility:visible;}
+    #credentialsView{position:absolute;top:0;left:0;width:100%;display:block !important;}
+    .cred-toolbar{display:none !important;}
+    .cred-grid{grid-template-columns:repeat(3, 1fr);gap:14px;}
+    .cred-card{border:1px solid #ccc;background:#fff;color:#000;}
+    .cred-card::before{border-color:#ccc;background:#fff;}
+    .cred-eyebrow,.cred-event,.cred-detail{color:#555;}
+  }
+
+  .spinner{
+    display:inline-block;width:13px;height:13px;border:2px solid rgba(13,13,19,0.3);
+    border-top-color:#0d0d13;border-radius:50%;animation:spin .7s linear infinite;
+    vertical-align:middle;margin-right:6px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand-eyebrow"><b>Destino Arena</b> · Ocean Blue Strategy</div>
+      <h1>Gestión de Accesos</h1>
+    </div>
+    <div class="event-name-field">
+      <label for="eventName">Evento</label>
+      <input type="text" id="eventName" placeholder="Ej: Kyara — Hector Couto">
+    </div>
+    <div class="apikey-field">
+      <label for="apiKeyInput">API Key (Anthropic) <span class="apikey-status unset" id="apiKeyStatus">sin configurar</span></label>
+      <div class="apikey-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+        <button class="secondary" id="btnSaveKey">Guardar</button>
+      </div>
+      <div class="apikey-hint">Se guarda solo en este navegador, nunca se sube a ningún repo. Necesaria únicamente para "Procesar con IA".</div>
+    </div>
+  </header>
+
+  <div id="mainView">
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+
+    <!-- LEFT PANEL: INPUT -->
+    <div class="panel">
+      <h2><span class="dot"></span>Cargar invitados</h2>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="whatsapp">Pegar texto</button>
+        <button class="tab-btn" data-tab="excel">Subir Excel</button>
+      </div>
+
+      <!-- Common batch fields -->
+      <label class="field-label" for="tipoInput">Tipo de entrada (para esta tanda)</label>
+      <input type="text" id="tipoInput" list="tipoSuggestions" placeholder="Ej: Backstage, General, VIP...">
+      <datalist id="tipoSuggestions">
+        <option value="General">
+        <option value="Backstage">
+        <option value="VIP">
+        <option value="VIP Backstage">
+        <option value="Prensa">
+      </datalist>
+
+      <label class="field-label" for="invitoInput">Quién invitó</label>
+      <input type="text" id="invitoInput" placeholder="Ej: Pili Lauro">
+
+      <!-- TAB: WhatsApp -->
+      <div class="tab-panel active" id="tab-whatsapp">
+        <label class="field-label" for="waText">Texto pegado de WhatsApp</label>
+        <textarea id="waText" placeholder="Pegá acá el bloque de mensajes. Ej:&#10;Felicitas ganduglia 44265028&#10;Pilar Lauro 35421446&#10;Antonela Girardi 35043783"></textarea>
+        <div class="hint">La IA separa nombre, apellido y DNI o teléfono, e ignora mails y texto suelto (como "4 vip backstage a ella"). Para listas muy largas, pegá en tandas de hasta ~50 nombres.</div>
+        <button class="primary" id="btnProcess">Procesar con IA</button>
+        <div class="msg" id="waMsg"></div>
+      </div>
+
+      <!-- TAB: Excel -->
+      <div class="tab-panel" id="tab-excel">
+        <label class="field-label">Archivo Excel (.xlsx / .csv)</label>
+        <label class="dropzone" id="dropzone">
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+          <div><strong>Hacé clic o arrastrá el archivo acá</strong><br>Columnas reconocidas: Nombre, Apellido, DNI, WhatsApp/Teléfono</div>
+        </label>
+        <div class="file-chip" id="fileChip"></div>
+        <div class="hint">El tipo de entrada y quién invitó de arriba se aplican a todas las filas del archivo.</div>
+        <div class="msg" id="excelMsg"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: TABLE -->
+    <div class="panel">
+      <div class="table-toolbar">
+        <h2 style="margin:0"><span class="dot"></span>Invitados cargados</h2>
+        <div class="actions">
+          <button class="secondary" id="btnAddRow">+ Agregar fila</button>
+          <button class="secondary" id="btnDedupe">Fusionar duplicados</button>
+          <button class="secondary" id="btnGenCred">Generar credenciales</button>
+          <button class="primary" style="width:auto;margin:0;padding:9px 16px;" id="btnExport">Descargar Excel</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table id="guestTable">
+          <thead>
+            <tr>
+              <th class="row-idx">#</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>DNI</th>
+              <th>Teléfono</th>
+              <th>Tipo de entrada</th>
+              <th>Quién invitó</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="big">Sin invitados aún</div>
+        Pegá un mensaje de WhatsApp o subí un Excel para empezar.
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="note">Los datos se procesan en tu navegador y no se guardan en ningún servidor. Revisá siempre la tabla antes de exportar.</footer>
+  </div>
+
+  <div id="credentialsView">
+    <div class="cred-toolbar">
+      <h2>Credenciales de acceso</h2>
+      <div class="actions" style="display:flex;gap:8px;">
+        <button class="secondary" id="btnBackFromCred">← Volver</button>
+        <button class="primary" style="width:auto;margin:0;padding:9px 16px;" id="btnPrintCred">Imprimir</button>
+      </div>
+    </div>
+    <div class="cred-grid" id="credGrid"></div>
+  </div>
+</div>
+
+<script>
+let guests = []; // {id, nombre, apellido, dni, telefono, tipo, invito}
+let idCounter = 1;
+
+// ---------- API KEY (stored locally only) ----------
+const API_KEY_STORAGE = 'destinoArena_anthropicApiKey';
+
+function getApiKey(){
+  try{ return localStorage.getItem(API_KEY_STORAGE) || ''; }catch(e){ return ''; }
+}
+function setApiKey(key){
+  try{ localStorage.setItem(API_KEY_STORAGE, key); }catch(e){ /* ignore */ }
+}
+function refreshApiKeyStatus(){
+  const status = document.getElementById('apiKeyStatus');
+  const has = !!getApiKey();
+  status.textContent = has ? 'configurada' : 'sin configurar';
+  status.className = 'apikey-status ' + (has ? 'set' : 'unset');
+}
+(function initApiKeyField(){
+  const stored = getApiKey();
+  if(stored) document.getElementById('apiKeyInput').value = stored;
+  refreshApiKeyStatus();
+})();
+document.getElementById('btnSaveKey').addEventListener('click', ()=>{
+  const val = document.getElementById('apiKeyInput').value.trim();
+  setApiKey(val);
+  refreshApiKeyStatus();
+});
+
+// ---------- TABS ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- HELPERS ----------
+function showMsg(el, text, type){
+  el.textContent = text;
+  el.className = 'msg show ' + type;
+}
+function clearMsg(el){ el.className = 'msg'; }
+
+function cleanDigits(s){ return (s||'').toString().replace(/[^\d]/g,''); }
+
+function classifyNumber(numStr){
+  const d = cleanDigits(numStr);
+  if(!d) return {dni:'', telefono:''};
+  if(d.length===7 || d.length===8) return {dni:d, telefono:''};
+  if(d.length>=9) return {dni:'', telefono:d};
+  return {dni:d, telefono:''};
+}
+
+function tagColor(tipo){
+  const t = (tipo||'').toLowerCase();
+  if(t.includes('backstage') && t.includes('vip')) return 'linear-gradient(90deg, var(--magenta), var(--gold))';
+  if(t.includes('backstage')) return 'var(--magenta)';
+  if(t.includes('vip')) return 'var(--gold)';
+  if(t.includes('general')) return 'var(--cyan)';
+  if(t.includes('prensa')) return 'var(--purple)';
+  return 'var(--text-faint)';
+}
+
+function addGuests(list){
+  list.forEach(g=>{
+    guests.push({
+      id: idCounter++,
+      nombre: g.nombre || '',
+      apellido: g.apellido || '',
+      dni: g.dni || '',
+      telefono: g.telefono || '',
+      tipo: g.tipo || '',
+      invito: g.invito || ''
+    });
+  });
+  render();
+}
+
+// ---------- RENDER ----------
+function render(){
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyState');
+  const scrollWrap = document.querySelector('.table-scroll');
+
+  if(guests.length===0){
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    scrollWrap.style.display = 'none';
+  } else {
+    empty.style.display = 'none';
+    scrollWrap.style.display = 'block';
+  }
+
+  // duplicate detection (same nombre+apellido, case-insensitive)
+  const nameCount = {};
+  guests.forEach(g=>{
+    const key = (g.nombre.trim()+' '+g.apellido.trim()).toLowerCase().trim();
+    if(key.length>1) nameCount[key] = (nameCount[key]||0)+1;
+  });
+
+  tbody.innerHTML = guests.map((g,i)=>{
+    const key = (g.nombre.trim()+' '+g.apellido.trim()).toLowerCase().trim();
+    const isDup = key.length>1 && nameCount[key] > 1;
+    return `
+    <tr class="${isDup?'dup':''}" data-id="${g.id}">
+      <td class="row-idx">${i+1}</td>
+      <td><input type="text" data-field="nombre" value="${escAttr(g.nombre)}"></td>
+      <td><input type="text" data-field="apellido" value="${escAttr(g.apellido)}">${isDup?'<span class="dup-badge">DUP</span>':''}</td>
+      <td><input type="text" class="mono" data-field="dni" value="${escAttr(g.dni)}"></td>
+      <td><input type="text" class="mono" data-field="telefono" value="${escAttr(g.telefono)}"></td>
+      <td class="tipo-cell" style="--tag-color:${tagColor(g.tipo)}"><input type="text" class="tipo-input" data-field="tipo" value="${escAttr(g.tipo)}"></td>
+      <td><input type="text" data-field="invito" value="${escAttr(g.invito)}"></td>
+      <td><button class="ghost" data-del="${g.id}">Quitar</button></td>
+    </tr>`;
+  }).join('');
+
+  // bind inputs
+  tbody.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const row = inp.closest('tr');
+      const id = Number(row.dataset.id);
+      const g = guests.find(x=>x.id===id);
+      if(g) g[inp.dataset.field] = inp.value;
+      if(inp.dataset.field === 'tipo'){
+        row.querySelector('.tipo-cell').style.setProperty('--tag-color', tagColor(inp.value));
+      }
+    });
+  });
+  tbody.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = Number(btn.dataset.del);
+      guests = guests.filter(g=>g.id!==id);
+      render();
+    });
+  });
+
+  renderStats();
+}
+
+function escAttr(s){
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function renderStats(){
+  const el = document.getElementById('stats');
+  const total = guests.length;
+  const counts = {};
+  guests.forEach(g=>{
+    const t = (g.tipo||'Sin tipo').trim() || 'Sin tipo';
+    counts[t] = (counts[t]||0)+1;
+  });
+  let html = `<div class="stat-chip total"><div class="num">${total}</div><div class="lbl">Total</div></div>`;
+  Object.keys(counts).sort().forEach(t=>{
+    const tl = t.toLowerCase();
+    let cls = '';
+    if(tl.includes('backstage')) cls='magenta';
+    else if(tl.includes('vip')) cls='gold';
+    else if(tl.includes('general')) cls='cyan';
+    html += `<div class="stat-chip ${cls}"><div class="num">${counts[t]}</div><div class="lbl">${t}</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ---------- AI PARSE (WhatsApp text) ----------
+document.getElementById('btnProcess').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnProcess');
+  const msgEl = document.getElementById('waMsg');
+  const text = document.getElementById('waText').value.trim();
+  const tipo = document.getElementById('tipoInput').value.trim();
+  const invito = document.getElementById('invitoInput').value.trim();
+
+  clearMsg(msgEl);
+
+  if(!text){
+    showMsg(msgEl, 'Pegá primero el texto del mensaje.', 'error');
+    return;
+  }
+
+  const apiKey = getApiKey();
+  if(!apiKey){
+    showMsg(msgEl, 'Falta configurar tu API Key de Anthropic arriba (campo "API Key") antes de procesar con IA.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Procesando...';
+
+  const systemPrompt = `Extraés listas de invitados a partir de texto crudo de WhatsApp en español rioplatense (Argentina), de una productora de eventos.
+
+El texto puede tener varias secciones separadas por líneas que dan contexto. Prestá atención a:
+- Líneas como "Lista de invitadas Pili Lauro" o "Lista de invitados de Fernando": esa persona es quien invitó a los nombres que aparecen después, hasta la próxima línea de contexto.
+- Líneas como "4 vip backstage a ella" o "2 general para él": indican el TIPO de entrada (ej. "VIP Backstage", "General") para los nombres cercanos. El "ella"/"él" es un pronombre, NUNCA es un nombre ni indica quién invitó — ignoralo para el campo invito.
+- Direcciones de mail: ignoralas siempre, no son nombres.
+
+Cada línea de una persona típicamente es "Nombre Apellido NUMERO" (el número puede ser DNI de 7-8 dígitos o teléfono de 9-11 dígitos, a veces falta). Si una línea tiene más de dos palabras de nombre, usá la última palabra como apellido y el resto como nombre.
+
+Para cada persona devolvé un objeto con:
+- nombre, apellido
+- numero: el número tal cual aparece, solo dígitos, string vacío si no hay
+- tipo: el tipo de entrada SOLO si se puede inferir de una línea de contexto cercana en el texto; si no aparece explícito, string vacío (no inventes ni asumas)
+- invito: quién invitó SOLO si aparece explícito como nombre propio en una línea de contexto (ej. "Lista de invitadas de X"); si no aparece, string vacío
+
+No inventes datos que no estén en el texto. Devolvé ÚNICAMENTE un array JSON válido, sin texto adicional, sin markdown, sin explicación. Formato exacto:
+[{"nombre":"Felicitas","apellido":"Ganduglia","numero":"44265028","tipo":"","invito":"Pili Lauro"}]`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: "user", content: text }]
+      })
+    });
+
+    if(!response.ok){
+      if(response.status === 401){
+        throw new Error('API Key inválida o vencida (401). Revisala en console.anthropic.com');
+      }
+      throw new Error('HTTP ' + response.status);
+    }
+
+    const data = await response.json();
+    const raw = (data.content || []).map(c=>c.text||'').join('\n').trim();
+    const clean = raw.replace(/```json/gi,'').replace(/```/g,'').trim();
+    const parsed = JSON.parse(clean);
+
+    if(!Array.isArray(parsed) || parsed.length===0){
+      showMsg(msgEl, 'No se detectaron personas en el texto. Revisá el formato.', 'error');
+    } else {
+      let autoInvito = 0, autoTipo = 0;
+      const mapped = parsed.map(p=>{
+        const {dni, telefono} = classifyNumber(p.numero);
+        const detectedTipo = (p.tipo||'').trim();
+        const detectedInvito = (p.invito||'').trim();
+        if(detectedTipo) autoTipo++;
+        if(detectedInvito) autoInvito++;
+        return { nombre: p.nombre||'', apellido: p.apellido||'', dni, telefono, tipo: detectedTipo || tipo, invito: detectedInvito || invito };
+      });
+      addGuests(mapped);
+      let extra = '';
+      if(autoTipo>0 || autoInvito>0){
+        extra = ` (detectado del texto: ${autoTipo} tipo, ${autoInvito} quién invitó — el resto usó los campos de arriba)`;
+      }
+      showMsg(msgEl, `${mapped.length} invitado(s) agregado(s)${extra}. Revisá la tabla y corregí si hace falta.`, 'ok');
+      document.getElementById('waText').value = '';
+    }
+  } catch(err){
+    console.error(err);
+    showMsg(msgEl, 'No se pudo procesar el texto (' + err.message + '). Podés cargar los datos manualmente con "+ Agregar fila".', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Procesar con IA';
+  }
+});
+
+// ---------- EXCEL IMPORT ----------
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileChip = document.getElementById('fileChip');
+const excelMsg = document.getElementById('excelMsg');
+
+fileInput.addEventListener('change', (e)=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+dropzone.addEventListener('dragover', e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function normalizeHeader(h){
+  return (h||'').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,''); // strip accents
+}
+
+function handleFile(file){
+  clearMsg(excelMsg);
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+
+      if(rows.length===0){
+        showMsg(excelMsg, 'El archivo no tiene filas de datos.', 'error');
+        return;
+      }
+
+      // map headers
+      const headers = Object.keys(rows[0]);
+      const map = {};
+      headers.forEach(h=>{
+        const nh = normalizeHeader(h);
+        if(nh === 'nombre') map.nombre = h;
+        else if(nh === 'apellido') map.apellido = h;
+        else if(nh.includes('dni') || nh.includes('documento')) map.dni = h;
+        else if(nh.includes('telefono') || nh.includes('whatsapp') || nh.includes('celular') || nh.includes('cel')) map.telefono = h;
+        else if(nh.includes('nombre completo') || nh.includes('nombre y apellido')) map.completo = h;
+      });
+
+      const tipo = document.getElementById('tipoInput').value.trim();
+      const invito = document.getElementById('invitoInput').value.trim();
+
+      const mapped = rows.map(r=>{
+        let nombre = map.nombre ? String(r[map.nombre]||'').trim() : '';
+        let apellido = map.apellido ? String(r[map.apellido]||'').trim() : '';
+        if(!nombre && !apellido && map.completo){
+          const parts = String(r[map.completo]||'').trim().split(/\s+/);
+          nombre = parts.slice(0,-1).join(' ') || parts[0] || '';
+          apellido = parts.length>1 ? parts[parts.length-1] : '';
+        }
+        const dni = map.dni ? cleanDigits(r[map.dni]) : '';
+        const telefono = map.telefono ? cleanDigits(r[map.telefono]) : '';
+        return { nombre, apellido, dni, telefono, tipo, invito };
+      }).filter(r=>r.nombre || r.apellido);
+
+      if(mapped.length===0){
+        showMsg(excelMsg, 'No se reconocieron columnas de nombre en el archivo. Podés cargar manualmente con "+ Agregar fila".', 'error');
+        return;
+      }
+
+      addGuests(mapped);
+      fileChip.style.display = 'block';
+      fileChip.textContent = `✓ ${file.name} — ${mapped.length} fila(s) importada(s)`;
+      showMsg(excelMsg, `${mapped.length} invitado(s) agregado(s) desde el archivo.`, 'ok');
+    } catch(err){
+      console.error(err);
+      showMsg(excelMsg, 'No se pudo leer el archivo. Verificá que sea un .xlsx, .xls o .csv válido.', 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ---------- MANUAL ROW ----------
+document.getElementById('btnAddRow').addEventListener('click', ()=>{
+  addGuests([{ nombre:'', apellido:'', dni:'', telefono:'', tipo: document.getElementById('tipoInput').value.trim(), invito: document.getElementById('invitoInput').value.trim() }]);
+});
+
+// ---------- DEDUPE ----------
+document.getElementById('btnDedupe').addEventListener('click', ()=>{
+  const seen = new Set();
+  const before = guests.length;
+  guests = guests.filter(g=>{
+    const key = (g.nombre.trim()+'|'+g.apellido.trim()+'|'+(g.tipo||'').trim()).toLowerCase();
+    if(key === '||' ) return true; // keep fully blank rows untouched
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const removed = before - guests.length;
+  render();
+  alert(removed>0 ? `Se fusionaron ${removed} fila(s) duplicada(s).` : 'No se encontraron duplicados exactos (mismo nombre, apellido y tipo).');
+});
+
+// ---------- EXPORT ----------
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  if(guests.length===0){
+    alert('No hay invitados cargados todavía.');
+    return;
+  }
+  const data = guests.map(g=>({
+    'Nombre': g.nombre,
+    'Apellido': g.apellido,
+    'DNI': g.dni,
+    'Teléfono': g.telefono,
+    'Tipo de Entrada': g.tipo,
+    'Quién invitó': g.invito
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:18},{wch:18},{wch:12},{wch:14},{wch:16},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Invitados');
+  const eventName = document.getElementById('eventName').value.trim();
+  const safeName = eventName ? eventName.replace(/[^\w\s-]/g,'').replace(/\s+/g,'_') : 'Invitados';
+  const dateStr = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `${safeName}_${dateStr}.xlsx`);
+});
+
+// ---------- CREDENTIALS / QR ----------
+document.getElementById('btnGenCred').addEventListener('click', ()=>{
+  if(guests.length===0){
+    alert('No hay invitados cargados todavía.');
+    return;
+  }
+  buildCredentials();
+  document.getElementById('mainView').style.display='none';
+  document.getElementById('credentialsView').classList.add('active');
+  window.scrollTo(0,0);
+});
+document.getElementById('btnBackFromCred').addEventListener('click', ()=>{
+  document.getElementById('credentialsView').classList.remove('active');
+  document.getElementById('mainView').style.display='block';
+});
+document.getElementById('btnPrintCred').addEventListener('click', ()=> window.print());
+
+function buildCredentials(){
+  const grid = document.getElementById('credGrid');
+  grid.innerHTML = '';
+  const eventName = document.getElementById('eventName').value.trim() || 'Destino Arena';
+
+  guests.forEach(g=>{
+    const fullName = (g.nombre.trim()+' '+g.apellido.trim()).trim() || 'Invitado';
+    const card = document.createElement('div');
+    card.className = 'cred-card';
+    card.style.setProperty('--tag-bg', tagColor(g.tipo));
+    card.innerHTML = `
+      <div class="cred-eyebrow">Destino Arena</div>
+      <div class="cred-event">${escAttr(eventName)}</div>
+      <div class="cred-tipo-tag">${escAttr(g.tipo || 'Invitado')}</div>
+      <div class="cred-name">${escAttr(fullName)}</div>
+      ${g.dni ? `<div class="cred-detail">DNI ${escAttr(g.dni)}</div>` : ''}
+      ${g.invito ? `<div class="cred-detail">Invita: ${escAttr(g.invito)}</div>` : ''}
+      <div class="cred-qr"><div class="qr-target"></div></div>
+    `;
+    grid.appendChild(card);
+
+    const qrLines = [
+      'DESTINO ARENA',
+      `Nombre: ${fullName}`,
+      g.dni ? `DNI: ${g.dni}` : null,
+      `Entrada: ${g.tipo || '-'}`,
+      `Invita: ${g.invito || '-'}`
+    ].filter(Boolean);
+
+    new QRCode(card.querySelector('.qr-target'), {
+      text: qrLines.join('\n'),
+      width: 104,
+      height: 104,
+      colorDark: '#0d0d13',
+      colorLight: '#ffffff'
+    });
+  });
+}
+
+render();
+</script>
+</body>
+</html>
