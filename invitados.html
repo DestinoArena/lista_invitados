@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0E0F">
+<meta name="robots" content="noindex, nofollow">
+<title>Invitados · Destino Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0E0F;--card:#111819;--card2:#0E1415;--line:#1E2A2B;--txt:#E8EEEE;--mut:#8FA3A4;--dim:#5E7273;--acc:#3ED6C7;--warn:#F2B84B;--err:#F2665B}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--txt);font-family:'DM Sans',system-ui,sans-serif;min-height:100%}
+button,input,select{font-family:inherit;font-size:16px;color:inherit}
+.mono{font-family:'DM Mono',ui-monospace,monospace}
+.eyebrow{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--acc)}
+.hidden{display:none!important}
+
+/* login */
+#login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:32px 24px;max-width:440px;margin:auto;gap:14px}
+#login h1{font-size:34px;line-height:1.05;margin:6px 0 10px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-family:'DM Mono';font-size:11px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase}
+.field input,.field select{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;outline:none}
+.field input:focus,.field select:focus{border-color:var(--acc)}
+.btn{background:var(--acc);color:var(--bg);border:0;border-radius:12px;padding:15px;font-weight:700;letter-spacing:.02em;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);font-weight:500}
+.err{color:var(--err);font-size:14px;min-height:18px}
+
+/* header */
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.brand{font-weight:700;font-size:13px;letter-spacing:.06em}.brand span{color:var(--acc)}
+.evt{font-family:'DM Mono';font-size:11px;color:var(--mut);letter-spacing:.08em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync{display:flex;align-items:center;gap:6px;font-family:'DM Mono';font-size:11px;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 10px;white-space:nowrap;cursor:pointer}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--acc)}.dot.warn{background:var(--warn)}.dot.err{background:var(--err)}
+.stats{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.stat .l{font-family:'DM Mono';font-size:9.5px;letter-spacing:.16em;color:var(--mut);text-transform:uppercase}
+.stat .v{font-size:22px;font-weight:700;margin-top:2px}.stat .v small{font-size:13px;color:var(--dim);font-weight:500}
+.stat.a .v{color:var(--acc)}
+.bar{height:4px;background:var(--line);border-radius:4px;margin-top:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.tabs{display:flex;gap:6px;margin-top:12px}
+.tab{flex:1;background:transparent;border:1px solid var(--line);border-radius:10px;padding:9px;font-size:14px;color:var(--mut);cursor:pointer}
+.tab.on{background:var(--txt);color:var(--bg);border-color:var(--txt);font-weight:700}
+
+/* puerta */
+.tools{position:sticky;top:var(--hh,190px);z-index:4;background:var(--bg);padding:10px 16px 8px}
+.search{position:relative}
+.search input{width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 44px 15px 16px;font-size:17px;outline:none}
+.search input:focus{border-color:var(--acc)}
+.search button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);font-size:22px;padding:6px 8px;cursor:pointer}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:7px 12px;font-size:13px;color:var(--mut);cursor:pointer;white-space:nowrap}
+.chip.on{border-color:var(--acc);color:var(--acc)}
+select.chip{appearance:none;-webkit-appearance:none;padding-right:26px;background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+#list{padding:2px 16px 120px;list-style:none}
+.g{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.g .info{flex:1;min-width:0}
+.g .nm{font-size:17px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g .sub{font-size:12.5px;color:var(--mut);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pill{font-family:'DM Mono';font-size:10px;letter-spacing:.1em;text-transform:uppercase;border:1px solid #2C3A3B;border-radius:20px;padding:2px 7px;color:var(--mut)}
+.pill.vip{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:500}
+.pill.door{border-color:var(--warn);color:var(--warn)}
+.act{flex:none;min-width:104px;height:46px;border-radius:12px;border:0;font-weight:700;font-size:14px;letter-spacing:.04em;cursor:pointer}
+.act.in{background:var(--acc);color:var(--bg)}
+.act.done{background:transparent;border:1px solid var(--line);color:var(--acc);font-family:'DM Mono';font-weight:500;font-size:13px}
+.act.confirm{background:var(--err);color:#fff}
+.g.ok .nm{color:var(--mut)}
+.g .when{font-family:'DM Mono';font-size:11.5px;color:var(--acc)}
+.empty{color:var(--mut);text-align:center;padding:40px 10px;font-size:15px}
+.empty .btn{margin-top:14px;padding:12px 18px}
+.fab{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:6;background:var(--txt);color:var(--bg);border:0;border-radius:30px;padding:15px 20px;font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer}
+
+/* liquidacion */
+#liq{padding:14px 16px 120px}
+#liq h2{font-size:24px;margin:4px 0 4px}
+#liq p.note{color:var(--mut);font-size:14px;margin-bottom:14px}
+.lrow{display:grid;grid-template-columns:1fr auto;gap:4px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.lrow .e{font-weight:700;font-size:16px}
+.lrow .m{font-family:'DM Mono';font-size:18px;color:var(--acc);text-align:right;font-weight:500}
+.lrow .d{font-family:'DM Mono';font-size:12px;color:var(--mut);grid-column:1/-1}
+.ltot{background:var(--txt);color:var(--bg);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 18px}
+.ltot .l{font-family:'DM Mono';font-size:12px;letter-spacing:.16em}.ltot .m{font-family:'DM Mono';font-size:22px;font-weight:500}
+.exp{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small{font-size:13px;color:var(--dim);margin-top:14px;line-height:1.5}
+
+/* sheet / toast */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:flex;align-items:flex-end}
+.sheet{background:var(--bg);border-top:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:560px;margin:auto auto 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px;max-height:92vh;overflow:auto}
+.sheet h3{font-size:20px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{display:flex;gap:10px;align-items:center;font-size:15px}
+.check input{width:22px;height:22px;accent-color:var(--acc)}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 84px);z-index:30;background:var(--card);border:1px solid var(--acc);border-radius:14px;padding:14px 16px;transform:translateY(20px);opacity:0;visibility:hidden;pointer-events:none;transition:transform .2s,opacity .2s,visibility .2s;max-width:520px;margin:auto}
+#toast.show{transform:none;opacity:1;visibility:visible}
+#toast .t1{font-weight:700;font-size:16px}
+#toast .t2{font-family:'DM Mono';font-size:12px;color:var(--mut);margin-top:3px;letter-spacing:.08em}
+#toast.vip{background:var(--acc);color:var(--bg)}#toast.vip .t2{color:var(--bg)}
+#toast.bad{border-color:var(--err)}
+
+/* impresion (export PDF) */
+#print{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff!important;color:#000}
+  #app,#login,.ov,#toast,.fab{display:none!important}
+  #print{display:block;font-family:'DM Sans';color:#0A0E0F;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .hd{background:#0A0E0F;color:#E8EEEE;padding:14px 18px;border-bottom:4px solid #3ED6C7;display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+  #print .hd b{font-size:22px}#print .hd .eyebrow{font-size:9px}
+  #print table{width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:16px}
+  #print th{background:#0A0E0F;color:#fff;font-family:'DM Mono';font-weight:500;font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:6px 7px}
+  #print td{padding:5px 7px;border-bottom:1px solid #E1E8E8}
+  #print tr{break-inside:avoid}
+  #print h2{font-size:16px;margin:14px 0 6px}
+  #print .r{text-align:right;font-family:'DM Mono'}
+  #print tfoot td{font-weight:700;border-top:2px solid #0A0E0F}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login" class="hidden">
+  <div class="eyebrow">Only by Destino Arena</div>
+  <h1>Control de<br>invitados</h1>
+  <div class="field"><label for="op">Tu nombre</label><input id="op" autocomplete="name" placeholder="Ej: Fede"></div>
+  <div class="field"><label for="pin">PIN del evento</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></div>
+  <div class="err" id="loginErr"></div>
+  <button class="btn" id="loginBtn">Entrar</button>
+</section>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header id="hdr">
+    <div class="top">
+      <div style="min-width:0">
+        <div class="brand">DESTINO <span>ARENA</span></div>
+        <div class="evt" id="evt">—</div>
+      </div>
+      <div class="sync" id="sync" title="Sincronizar"><span class="dot" id="dot"></span><span id="syncTxt">…</span></div>
+    </div>
+    <div class="stats">
+      <div class="stat a"><div class="l">Ingresaron</div><div class="v" id="sIn">0 <small>/ 0</small></div><div class="bar"><i id="sBar"></i></div></div>
+      <div class="stat"><div class="l">Pendientes</div><div class="v" id="sPend">0</div></div>
+      <div class="stat"><div class="l">VIP adentro</div><div class="v" id="sVip">0</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="puerta">Puerta</button>
+      <button class="tab" data-tab="liq">Liquidación</button>
+    </div>
+  </header>
+
+  <section id="puerta">
+    <div class="tools">
+      <div class="search"><input id="q" type="search" placeholder="Buscar invitado…" autocomplete="off" autocorrect="off" spellcheck="false"><button id="qx" aria-label="Borrar">×</button></div>
+      <div class="chips">
+        <button class="chip on" data-st="pend">Pendientes</button>
+        <button class="chip" data-st="in">Ingresaron</button>
+        <button class="chip" data-st="all">Todos</button>
+        <select class="chip" id="fSec"><option value="">Sector: todos</option><option>General</option><option>Backstage/VIP</option></select>
+        <select class="chip" id="fEmb"><option value="">Embajadora: todas</option></select>
+      </div>
+    </div>
+    <ul id="list"></ul>
+    <button class="fab" id="addBtn">+ Agregar</button>
+  </section>
+
+  <section id="liq" class="hidden">
+    <div class="eyebrow">Liquidación a embajadoras</div>
+    <h2>Pago por invitado</h2>
+    <p class="note" id="liqNote"></p>
+    <div id="liqRows"></div>
+    <div class="ltot"><span class="l">TOTAL A PAGAR</span><span class="m" id="liqTot">$ 0</span></div>
+    <div class="exp">
+      <button class="btn" id="xlsBtn">Exportar Excel</button>
+      <button class="btn ghost" id="pdfBtn">Exportar PDF</button>
+    </div>
+    <p class="small">Se paga por invitado que <b>ingresó</b>. Los agregados en puerta como "Producción" no suman a ninguna embajadora.</p>
+    <p class="small" style="margin-top:22px"><button class="btn ghost" id="logout" style="padding:10px 14px">Cerrar sesión (<span id="opName"></span>)</button></p>
+  </section>
+</div>
+
+<!-- AGREGAR -->
+<div class="ov hidden" id="addOv">
+  <div class="sheet">
+    <div class="eyebrow">Agregar en puerta</div>
+    <h3>Invitado que no figura</h3>
+    <div class="field"><label>Nombre y apellido</label><input id="aNom" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label>Invitado por</label><select id="aEmb"></select></div>
+      <div class="field"><label>Sector</label><select id="aSec"><option>General</option><option>Backstage/VIP</option></select></div>
+    </div>
+    <div class="field"><label>Autorizado por</label><input id="aAut" placeholder="Quién dio el OK" autocomplete="off"></div>
+    <label class="check"><input type="checkbox" id="aIn" checked> Marcar como ingresado ahora</label>
+    <div class="err" id="aErr"></div>
+    <div class="row2"><button class="btn ghost" id="aCancel">Cancelar</button><button class="btn" id="aOk">Agregar</button></div>
+  </div>
+</div>
+
+<div id="toast"><div class="t1" id="t1"></div><div class="t2" id="t2"></div></div>
+<div id="print"></div>
+
+<script>
+/* ============ CONFIGURACIÓN ============ */
+const API_URL = 'PEGAR_AQUI_URL_DEL_APPS_SCRIPT';   // termina en /exec
+const STORE = 'da-invitados-v1';                     // cambiar por evento para no mezclar datos
+const POLL_MS = 12000;
+const PRODUCCION = 'Producción (sin pago)';
+/* ====================================== */
+
+const $ = s => document.querySelector(s);
+const norm = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '$ ' + Math.round(n).toLocaleString('es-AR');
+const hhmm = iso => { const d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Argentina/Buenos_Aires'}); };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const isVip = s => norm(s).includes('vip') || norm(s).includes('backstage');
+
+let S = { key:'', operador:'', guests:[], queue:[], evento:'', valor:4000, lastSync:0, online:true, busy:false };
+const ui = { st:'pend', sec:'', emb:'', q:'', tab:'puerta', confirm:null };
+
+function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE)||'{}'); Object.assign(S,d); }catch(e){} }
+function save(){ try{ const {key,operador,guests,queue,evento,valor,lastSync}=S; localStorage.setItem(STORE,JSON.stringify({key,operador,guests,queue,evento,valor,lastSync})); }catch(e){} }
+
+/* estado visible = servidor + cola local pendiente */
+function view(){
+  const map = new Map(S.guests.map(g=>[g.id,{...g}]));
+  for(const op of S.queue){
+    if(op.op==='add' && !map.has(op.id)) map.set(op.id,{id:op.id,nombre:op.guest.nombre,embajadora:op.guest.embajadora,sector:op.guest.sector,ingreso:op.guest.ingresar?op.ts:'',operador:op.guest.ingresar?op.operador:'',origen:'puerta',autorizado:op.guest.autorizado,pending:true});
+    const g = map.get(op.id); if(!g) continue;
+    if(op.op==='in' && !g.ingreso){ g.ingreso=op.ts; g.operador=op.operador; g.pending=true; }
+    if(op.op==='out'){ g.ingreso=''; g.operador=''; g.pending=true; }
+  }
+  return [...map.values()].sort((a,b)=>norm(a.nombre).localeCompare(norm(b.nombre)));
+}
+
+/* ---------- red ---------- */
+async function api(ops){
+  if(ops && ops.length){
+    const r = await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:S.key,ops})});
+    return r.json();
+  }
+  const r = await fetch(API_URL+'?key='+encodeURIComponent(S.key)+'&t='+Date.now());
+  return r.json();
+}
+async function sync(){
+  if(S.busy || !S.key) return;
+  S.busy=true; paintSync();
+  const ops = S.queue.slice(0,50);
+  try{
+    const res = await api(ops);
+    if(!res.ok){ if(/PIN/i.test(res.error||'')){ logout(res.error); } throw new Error(res.error); }
+    const done = new Set(res.applied||[]);
+    S.queue = S.queue.filter(o=>!done.has(o.uid));
+    S.guests = res.guests||[]; S.evento=res.evento||S.evento; if(res.valor) S.valor=res.valor;
+    S.lastSync=Date.now(); S.online=true; save();
+  }catch(e){ S.online=false; }
+  S.busy=false; render();
+  if(S.online && S.queue.length) setTimeout(sync,300);
+}
+function enqueue(op){ op.uid=uid(); op.ts=op.ts||new Date().toISOString(); op.operador=S.operador; S.queue.push(op); save(); render(); sync(); }
+
+/* ---------- acciones ---------- */
+function checkIn(id){
+  const g=view().find(x=>x.id===id); if(!g||g.ingreso) return;
+  enqueue({op:'in',id});
+  if(navigator.vibrate) navigator.vibrate(40);
+  toast(g.nombre, (isVip(g.sector)?'BACKSTAGE/VIP — PULSERA VIP':'GENERAL')+' · '+g.embajadora, isVip(g.sector)?'vip':'');
+}
+function undo(id){
+  if(ui.confirm!==id){ ui.confirm=id; render(); setTimeout(()=>{ if(ui.confirm===id){ui.confirm=null;render();} },3500); return; }
+  ui.confirm=null; enqueue({op:'out',id}); toast('Ingreso anulado', view().find(x=>x.id===id)?.nombre||'', 'bad');
+}
+
+/* ---------- render ---------- */
+function paintSync(){
+  const dot=$('#dot'), t=$('#syncTxt');
+  dot.className='dot';
+  if(!S.online){ dot.classList.add('err'); t.textContent = S.queue.length? `Sin señal · ${S.queue.length} en cola` : 'Sin señal'; }
+  else if(S.queue.length || S.busy){ dot.classList.add('warn'); t.textContent = S.queue.length? `Enviando ${S.queue.length}…` : 'Sincronizando…'; }
+  else { t.textContent = S.lastSync? 'Al día · '+new Date(S.lastSync).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) : '…'; }
+}
+let lastEmbs='';
+function render(){
+  const all=view();
+  const inn=all.filter(g=>g.ingreso).length;
+  $('#evt').textContent=S.evento||'Lista de invitados';
+  $('#sIn').innerHTML=`${inn} <small>/ ${all.length}</small>`;
+  $('#sBar').style.width=(all.length?inn/all.length*100:0)+'%';
+  $('#sPend').textContent=all.length-inn;
+  $('#sVip').textContent=all.filter(g=>g.ingreso&&isVip(g.sector)).length;
+  $('#opName').textContent=S.operador;
+  paintSync();
+
+  const embs=[...new Set(all.map(g=>g.embajadora).filter(Boolean))].sort((a,b)=>norm(a).localeCompare(norm(b)));
+  const k=embs.join('|');
+  if(k!==lastEmbs){ lastEmbs=k;
+    $('#fEmb').innerHTML='<option value="">Embajadora: todas</option>'+embs.map(e=>`<option ${e===ui.emb?'selected':''}>${esc(e)}</option>`).join('');
+    $('#aEmb').innerHTML=embs.filter(e=>e!==PRODUCCION).map(e=>`<option>${esc(e)}</option>`).join('')+`<option>${PRODUCCION}</option>`;
+  }
+
+  if(ui.tab==='puerta'){
+    const q=norm(ui.q); const qs=q.split(/\s+/).filter(Boolean);
+    let rows=all.filter(g=>{
+      if(ui.sec && (isVip(ui.sec)!==isVip(g.sector))) return false;
+      if(ui.emb && g.embajadora!==ui.emb) return false;
+      if(qs.length){ const n=norm(g.nombre); return qs.every(w=>n.includes(w)); }   // si busca, muestra todos los estados
+      if(ui.st==='pend') return !g.ingreso;
+      if(ui.st==='in') return !!g.ingreso;
+      return true;
+    });
+    if(ui.st==='in' && !qs.length) rows.sort((a,b)=>String(b.ingreso).localeCompare(String(a.ingreso)));
+    $('#list').innerHTML = rows.length ? rows.map(g=>{
+      const vip=isVip(g.sector);
+      const btn = g.ingreso
+        ? (ui.confirm===g.id ? `<button class="act confirm" data-undo="${esc(g.id)}">¿Anular?</button>` : `<button class="act done" data-undo="${esc(g.id)}">✓ ${hhmm(g.ingreso)}</button>`)
+        : `<button class="act in" data-in="${esc(g.id)}">INGRESÓ</button>`;
+      return `<li class="g ${g.ingreso?'ok':''}"><div class="info"><div class="nm">${esc(g.nombre)}</div>
+        <div class="sub"><span class="pill ${vip?'vip':''}">${vip?'Backstage/VIP':'General'}</span>${esc(g.embajadora)}${g.origen==='puerta'?' <span class="pill door">Puerta</span>':''}${g.ingreso&&g.operador?` <span class="when">· ${esc(g.operador)}</span>`:''}</div></div>${btn}</li>`;
+    }).join('') : `<li class="empty">${qs.length?'No está en la lista.<br><button class="btn" id="emptyAdd">+ Agregar "'+esc(ui.q)+'"</button>':(ui.st==='pend'?'No quedan pendientes 🎉':'Sin resultados')}</li>`;
+    const ea=$('#emptyAdd'); if(ea) ea.onclick=()=>openAdd(ui.q);
+  } else renderLiq(all);
+  const hh=$('#hdr').offsetHeight; document.documentElement.style.setProperty('--hh',hh+'px');
+}
+function liqData(all){
+  const m=new Map();
+  for(const g of all){ const e=g.embajadora||'—'; if(!m.has(e)) m.set(e,{e,lista:0,puerta:0,ing:0}); const r=m.get(e); g.origen==='puerta'?r.puerta++:r.lista++; if(g.ingreso) r.ing++; }
+  const rows=[...m.values()].sort((a,b)=>norm(a.e).localeCompare(norm(b.e))).map(r=>({...r,pagar:r.e===PRODUCCION?0:r.ing*S.valor}));
+  return {rows,total:rows.reduce((s,r)=>s+r.pagar,0),ing:rows.reduce((s,r)=>s+(r.e===PRODUCCION?0:r.ing),0)};
+}
+function renderLiq(all){
+  const {rows,total,ing}=liqData(all);
+  $('#liqNote').textContent=`${money(S.valor)} por invitado que ingresó · ${ing} invitados a pagar`;
+  $('#liqRows').innerHTML=rows.map(r=>`<div class="lrow"><span class="e">${esc(r.e)}</span><span class="m">${r.e===PRODUCCION?'—':money(r.pagar)}</span>
+    <span class="d">Ingresaron ${r.ing} de ${r.lista+r.puerta}${r.puerta?` (${r.puerta} agregados en puerta)`:''}${r.e===PRODUCCION?'':` · ${r.ing} × ${money(S.valor)}`}</span></div>`).join('');
+  $('#liqTot').textContent=money(total);
+}
+
+/* ---------- toast ---------- */
+let tt;
+function toast(a,b,cls){ const t=$('#toast'); t.className='show '+(cls||''); $('#t1').textContent=a; $('#t2').textContent=b; clearTimeout(tt); tt=setTimeout(()=>t.className='',2600); }
+
+/* ---------- agregar ---------- */
+function openAdd(pref){ $('#aNom').value=pref||''; $('#aAut').value=''; $('#aErr').textContent=''; $('#aIn').checked=true; $('#addOv').classList.remove('hidden'); setTimeout(()=>$('#aNom').focus(),50); }
+function closeAdd(){ $('#addOv').classList.add('hidden'); }
+$('#aCancel').onclick=closeAdd;
+$('#addOv').onclick=e=>{ if(e.target.id==='addOv') closeAdd(); };
+$('#aOk').onclick=()=>{
+  const nombre=$('#aNom').value.replace(/\s+/g,' ').trim(), aut=$('#aAut').value.trim();
+  if(nombre.length<3) return $('#aErr').textContent='Ingresá nombre y apellido.';
+  if(!aut) return $('#aErr').textContent='Indicá quién lo autorizó.';
+  const dup=view().find(g=>norm(g.nombre)===norm(nombre));
+  if(dup) return $('#aErr').textContent=`Ya figura: ${dup.nombre} (${dup.embajadora}).`;
+  const guest={nombre,embajadora:$('#aEmb').value,sector:$('#aSec').value,autorizado:aut,ingresar:$('#aIn').checked};
+  enqueue({op:'add',id:'P-'+uid(),guest});
+  closeAdd(); ui.q=''; $('#q').value='';
+  toast(nombre,'AGREGADO'+(guest.ingresar?' E INGRESADO':'')+' · '+guest.sector, isVip(guest.sector)?'vip':''); render();
+};
+
+/* ---------- export ---------- */
+function loadScript(src){ return new Promise((ok,ko)=>{ const s=document.createElement('script'); s.src=src; s.onload=ok; s.onerror=ko; document.head.appendChild(s); }); }
+function fname(ext){ return 'Asistencia_'+(S.evento||'evento').split('·')[0].trim().replace(/\W+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.'+ext; }
+$('#xlsBtn').onclick=async()=>{
+  try{ if(!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); }
+  catch(e){ return toast('No se pudo exportar','Necesita conexión a internet','bad'); }
+  const all=view(), {rows,total}=liqData(all);
+  const a=all.map((g,i)=>({'N°':i+1,'Nombre y apellido':g.nombre,'Invitado por':g.embajadora,'Sector':g.sector,'Asistió':g.ingreso?'SÍ':'NO','Hora ingreso':g.ingreso?hhmm(g.ingreso):'','Operador':g.operador||'','Origen':g.origen==='puerta'?'Agregado en puerta':'Lista','Autorizado por':g.autorizado||''}));
+  const l=rows.map(r=>({'Embajadora':r.e,'En lista':r.lista+r.puerta,'Ingresaron':r.ing,'Valor por invitado':r.e===PRODUCCION?0:S.valor,'Total a pagar':r.pagar}));
+  l.push({'Embajadora':'TOTAL','En lista':all.length,'Ingresaron':rows.reduce((s,r)=>s+r.ing,0),'Valor por invitado':'','Total a pagar':total});
+  const wb=XLSX.utils.book_new();
+  const w1=XLSX.utils.json_to_sheet(a); w1['!cols']=[{wch:5},{wch:32},{wch:24},{wch:15},{wch:8},{wch:12},{wch:14},{wch:18},{wch:18}];
+  const w2=XLSX.utils.json_to_sheet(l); w2['!cols']=[{wch:26},{wch:10},{wch:11},{wch:18},{wch:15}];
+  XLSX.utils.book_append_sheet(wb,w1,'Asistencia'); XLSX.utils.book_append_sheet(wb,w2,'Liquidación');
+  XLSX.writeFile(wb,fname('xlsx'));
+};
+$('#pdfBtn').onclick=()=>{
+  const all=view(), {rows,total}=liqData(all), inn=all.filter(g=>g.ingreso).length;
+  $('#print').innerHTML=`<div class="hd"><div><div class="eyebrow">Asistencia de invitados · Embajadoras</div><b>${esc(S.evento||'')}</b></div><div style="text-align:right;font-weight:700;font-size:13px">DESTINO <span style="color:#3ED6C7">ARENA</span><div style="font-family:'DM Mono';font-size:9px;color:#8FA3A4;font-weight:400">Generado ${new Date().toLocaleString('es-AR',{hour12:false})}</div></div></div>
+  <h2>Liquidación — ${inn} de ${all.length} ingresaron</h2>
+  <table><thead><tr><th>Embajadora</th><th class="r">En lista</th><th class="r">Ingresaron</th><th class="r">Total a pagar</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.e)}</td><td class="r">${r.lista+r.puerta}</td><td class="r">${r.ing}</td><td class="r">${r.e===PRODUCCION?'—':money(r.pagar)}</td></tr>`).join('')}</tbody>
+  <tfoot><tr><td>TOTAL (${money(S.valor)} por invitado)</td><td class="r">${all.length}</td><td class="r">${inn}</td><td class="r">${money(total)}</td></tr></tfoot></table>
+  <h2>Detalle de invitados</h2>
+  <table><thead><tr><th>#</th><th>Nombre y apellido</th><th>Invitado por</th><th>Sector</th><th>Asistió</th><th>Hora</th><th>Operador</th></tr></thead><tbody>${all.map((g,i)=>`<tr><td>${i+1}</td><td>${esc(g.nombre)}${g.origen==='puerta'?' <i>(puerta)</i>':''}</td><td>${esc(g.embajadora)}</td><td>${esc(g.sector)}</td><td><b>${g.ingreso?'SÍ':'NO'}</b></td><td>${g.ingreso?hhmm(g.ingreso):''}</td><td>${esc(g.operador||'')}</td></tr>`).join('')}</tbody></table>`;
+  window.print();
+};
+
+/* ---------- eventos ---------- */
+$('#q').addEventListener('input',e=>{ ui.q=e.target.value; render(); });
+$('#qx').onclick=()=>{ ui.q=''; $('#q').value=''; render(); $('#q').focus(); };
+document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{ ui.st=b.dataset.st; document.querySelectorAll('[data-st]').forEach(x=>x.classList.toggle('on',x===b)); render(); });
+$('#fSec').onchange=e=>{ ui.sec=e.target.value; e.target.classList.toggle('on',!!ui.sec); render(); };
+$('#fEmb').onchange=e=>{ ui.emb=e.target.value; e.target.classList.toggle('on',!!ui.emb); render(); };
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{ ui.tab=b.dataset.tab; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b)); $('#puerta').classList.toggle('hidden',ui.tab!=='puerta'); $('#liq').classList.toggle('hidden',ui.tab!=='liq'); render(); window.scrollTo(0,0); });
+$('#list').addEventListener('click',e=>{
+  const i=e.target.closest('[data-in]'); if(i){ checkIn(i.dataset.in); if(ui.q){ ui.q=''; $('#q').value=''; render(); } return; }
+  const u=e.target.closest('[data-undo]'); if(u) undo(u.dataset.undo);
+});
+$('#addBtn').onclick=()=>openAdd(ui.q);
+$('#sync').onclick=()=>sync();
+$('#logout').onclick=()=>logout();
+window.addEventListener('online',sync);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) sync(); });
+
+function logout(msg){
+  if(S.queue.length && !msg){ toast('Hay ingresos sin enviar','Esperá a tener señal antes de salir','bad'); return; }
+  S.key=''; save(); showLogin(msg||'');
+}
+function showLogin(msg){ $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#op').value=S.operador||''; $('#loginErr').textContent=msg||''; }
+$('#loginBtn').onclick=async()=>{
+  const op=$('#op').value.trim(), pin=$('#pin').value.trim();
+  if(!op) return $('#loginErr').textContent='Poné tu nombre (queda registrado en cada ingreso).';
+  if(!pin) return $('#loginErr').textContent='Ingresá el PIN.';
+  if(API_URL.startsWith('PEGAR')) return $('#loginErr').textContent='Falta configurar API_URL en el archivo.';
+  $('#loginBtn').textContent='Verificando…';
+  try{ const r=await fetch(API_URL+'?key='+encodeURIComponent(pin)).then(r=>r.json());
+    if(!r.ok) throw new Error(r.error||'Error');
+    S.key=pin; S.operador=op; S.guests=r.guests; S.evento=r.evento; S.valor=r.valor||S.valor; S.lastSync=Date.now(); S.online=true; save(); start();
+  }catch(e){ $('#loginErr').textContent = e.message==='Failed to fetch'?'Sin conexión. Necesitás señal para el primer ingreso.':e.message; }
+  $('#loginBtn').textContent='Entrar';
+};
+$('#pin').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#loginBtn').click(); });
+
+let timer;
+function start(){ $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); render(); sync(); clearInterval(timer); timer=setInterval(()=>{ if(!document.hidden) sync(); },POLL_MS); }
+
+load();
+if(S.key) start(); else showLogin();
+</script>
+</body>
+</html>
