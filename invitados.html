@@ -53,6 +53,7 @@ header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(saf
 .search input{width:100%;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:14px;padding:15px 44px 15px 16px;font-size:17px;outline:none}
 .search input::placeholder{color:var(--mut)}
 .search input:focus{border-color:var(--purple)}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
 .search button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);font-size:22px;padding:6px 8px;cursor:pointer}
 .chips{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
@@ -170,7 +171,7 @@ select.chip option{background:var(--card);color:var(--txt)}
       <button class="btn-xl btn-excel" id="xlsBtn">Excel</button>
       <button class="btn-xl btn-pdf" id="pdfBtn">PDF</button>
     </div>
-    <p class="small">Se paga por invitado que <b>ingresó</b>. Los agregados en puerta como "Producción" no suman a ninguna embajadora.</p>
+    <p class="small">Se paga por invitado que <b>ingresó</b>. Los listados "sin pago" y los agregados como "Producción" no se liquidan.</p>
     <p class="small" style="margin-top:22px"><button class="btn ghost" id="logout" style="padding:10px 14px">Cerrar sesión (<span id="opName"></span>)</button></p>
   </section>
 </div>
@@ -208,6 +209,7 @@ const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const money = n => '$ ' + Math.round(n).toLocaleString('es-AR');
 const hhmm = iso => { const d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'America/Argentina/Buenos_Aires'}); };
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const noPay = e => e===PRODUCCION || /sin pago/i.test(e||'');
 const isVip = s => norm(s).includes('vip') || norm(s).includes('backstage');
 
 let S = { key:'', operador:'', guests:[], queue:[], evento:'', valor:4000, lastSync:0, online:true, busy:false };
@@ -319,14 +321,14 @@ function render(){
 function liqData(all){
   const m=new Map();
   for(const g of all){ const e=g.embajadora||'—'; if(!m.has(e)) m.set(e,{e,lista:0,puerta:0,ing:0}); const r=m.get(e); g.origen==='puerta'?r.puerta++:r.lista++; if(g.ingreso) r.ing++; }
-  const rows=[...m.values()].sort((a,b)=>norm(a.e).localeCompare(norm(b.e))).map(r=>({...r,pagar:r.e===PRODUCCION?0:r.ing*S.valor}));
-  return {rows,total:rows.reduce((s,r)=>s+r.pagar,0),ing:rows.reduce((s,r)=>s+(r.e===PRODUCCION?0:r.ing),0)};
+  const rows=[...m.values()].sort((a,b)=>norm(a.e).localeCompare(norm(b.e))).map(r=>({...r,pagar:noPay(r.e)?0:r.ing*S.valor}));
+  return {rows,total:rows.reduce((s,r)=>s+r.pagar,0),ing:rows.reduce((s,r)=>s+(noPay(r.e)?0:r.ing),0)};
 }
 function renderLiq(all){
   const {rows,total,ing}=liqData(all);
   $('#liqNote').textContent=`${money(S.valor)} por invitado que ingresó · ${ing} invitados a pagar`;
-  $('#liqRows').innerHTML=rows.map(r=>`<div class="lrow"><span class="e">${esc(r.e)}</span><span class="m">${r.e===PRODUCCION?'—':money(r.pagar)}</span>
-    <span class="d">Ingresaron ${r.ing} de ${r.lista+r.puerta}${r.puerta?` (${r.puerta} agregados en puerta)`:''}${r.e===PRODUCCION?'':` · ${r.ing} × ${money(S.valor)}`}</span></div>`).join('');
+  $('#liqRows').innerHTML=rows.map(r=>`<div class="lrow"><span class="e">${esc(r.e)}</span><span class="m">${noPay(r.e)?'Sin pago':money(r.pagar)}</span>
+    <span class="d">Ingresaron ${r.ing} de ${r.lista+r.puerta}${r.puerta?` (${r.puerta} agregados en puerta)`:''}${noPay(r.e)?'':` · ${r.ing} × ${money(S.valor)}`}</span></div>`).join('');
   $('#liqTot').textContent=money(total);
 }
 
@@ -359,7 +361,7 @@ $('#xlsBtn').onclick=async()=>{
   catch(e){ return toast('No se pudo exportar','Necesita conexión a internet','bad'); }
   const all=view(), {rows,total}=liqData(all);
   const a=all.map((g,i)=>({'N°':i+1,'Nombre y apellido':g.nombre,'Invitado por':g.embajadora,'Sector':g.sector,'Asistió':g.ingreso?'SÍ':'NO','Hora ingreso':g.ingreso?hhmm(g.ingreso):'','Operador':g.operador||'','Origen':g.origen==='puerta'?'Agregado en puerta':'Lista','Autorizado por':g.autorizado||''}));
-  const l=rows.map(r=>({'Embajadora':r.e,'En lista':r.lista+r.puerta,'Ingresaron':r.ing,'Valor por invitado':r.e===PRODUCCION?0:S.valor,'Total a pagar':r.pagar}));
+  const l=rows.map(r=>({'Embajadora':r.e,'En lista':r.lista+r.puerta,'Ingresaron':r.ing,'Valor por invitado':noPay(r.e)?0:S.valor,'Total a pagar':r.pagar}));
   l.push({'Embajadora':'TOTAL','En lista':all.length,'Ingresaron':rows.reduce((s,r)=>s+r.ing,0),'Valor por invitado':'','Total a pagar':total});
   const wb=XLSX.utils.book_new();
   const w1=XLSX.utils.json_to_sheet(a); w1['!cols']=[{wch:5},{wch:32},{wch:24},{wch:15},{wch:8},{wch:12},{wch:14},{wch:18},{wch:18}];
@@ -383,7 +385,7 @@ $('#pdfBtn').onclick=async()=>{
   doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(`Liquidación — ${inn} de ${all.length} ingresaron`,14,42);
   const hs={fillColor:D,textColor:255,fontStyle:'bold',fontSize:8}, ss={fontSize:9,cellPadding:2.2};
   doc.autoTable({startY:46,head:[['Embajadora','En lista','Ingresaron','Total a pagar']],
-    body:rows.map(r=>[r.e,r.lista+r.puerta,r.ing,r.e===PRODUCCION?'—':$m(r.pagar)]),
+    body:rows.map(r=>[r.e,r.lista+r.puerta,r.ing,noPay(r.e)?'Sin pago':$m(r.pagar)]),
     foot:[[`TOTAL (${$m(S.valor)} por invitado)`,all.length,inn,$m(total)]],
     headStyles:hs,footStyles:{fillColor:P,textColor:255,fontStyle:'bold'},styles:ss,columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'right'}},margin:{left:14,right:14}});
   let y=doc.lastAutoTable.finalY+10; doc.setFontSize(12); doc.text('Detalle de invitados',14,y);
