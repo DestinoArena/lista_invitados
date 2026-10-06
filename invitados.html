@@ -78,6 +78,11 @@ select.chip option{background:var(--card);color:var(--txt)}
 .g .when{color:var(--green)}
 .empty{color:var(--mut);text-align:center;padding:40px 20px;font-size:14px;line-height:1.8;list-style:none}
 .empty .btn{margin-top:14px;width:auto;padding:12px 20px}
+.robadge{display:none;margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--warn);}
+body.ro .robadge{display:inline-block}
+body.ro .fab{display:none!important}
+.act.ro{display:inline-flex;align-items:center;justify-content:center;cursor:default;box-shadow:none}
+.act.ro.pend{background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:600}
 .fab{position:fixed;right:max(16px,calc(50% - 224px));bottom:calc(env(safe-area-inset-bottom) + 20px);z-index:6;background:linear-gradient(120deg,var(--purple),var(--purple-deep));color:#fff;border:0;border-radius:999px;padding:15px 22px;font-weight:700;font-size:14px;letter-spacing:.04em;box-shadow:0 10px 24px -8px rgba(139,92,246,.7);cursor:pointer}
 
 /* liquidacion */
@@ -131,7 +136,7 @@ select.chip option{background:var(--card);color:var(--txt)}
     <div class="top">
       <div style="min-width:0">
         <div class="brand">DESTINO <span>ARENA</span></div>
-        <div class="evt" id="evt">—</div>
+        <div class="evt" id="evt">—</div><div class="robadge">Solo lectura</div>
       </div>
       <div class="sync" id="sync" title="Sincronizar"><span class="dot" id="dot"></span><span id="syncTxt">…</span></div>
     </div>
@@ -212,11 +217,11 @@ const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const noPay = e => e===PRODUCCION || /sin pago/i.test(e||'');
 const isVip = s => norm(s).includes('vip') || norm(s).includes('backstage');
 
-let S = { key:'', operador:'', guests:[], queue:[], evento:'', valor:4000, lastSync:0, online:true, busy:false };
+let S = { key:'', role:'staff', operador:'', guests:[], queue:[], evento:'', valor:4000, lastSync:0, online:true, busy:false };
 const ui = { st:'pend', sec:'', emb:'', q:'', tab:'puerta', confirm:null };
 
 function load(){ try{ const d=JSON.parse(localStorage.getItem(STORE)||'{}'); Object.assign(S,d); }catch(e){} }
-function save(){ try{ const {key,operador,guests,queue,evento,valor,lastSync}=S; localStorage.setItem(STORE,JSON.stringify({key,operador,guests,queue,evento,valor,lastSync})); }catch(e){} }
+function save(){ try{ const {key,role,operador,guests,queue,evento,valor,lastSync}=S; localStorage.setItem(STORE,JSON.stringify({key,role,operador,guests,queue,evento,valor,lastSync})); }catch(e){} }
 
 /* estado visible = servidor + cola local pendiente */
 function view(){
@@ -248,7 +253,7 @@ async function sync(){
     if(!res.ok){ if(/PIN/i.test(res.error||'')){ logout(res.error); } throw new Error(res.error); }
     const done = new Set(res.applied||[]);
     S.queue = S.queue.filter(o=>!done.has(o.uid));
-    S.guests = res.guests||[]; S.evento=res.evento||S.evento; if(res.valor) S.valor=res.valor;
+    S.guests = res.guests||[]; if(res.role) S.role=res.role; S.evento=res.evento||S.evento; if(res.valor) S.valor=res.valor;
     S.lastSync=Date.now(); S.online=true; save();
   }catch(e){ S.online=false; }
   S.busy=false; render();
@@ -257,13 +262,16 @@ async function sync(){
 function enqueue(op){ op.uid=uid(); op.ts=op.ts||new Date().toISOString(); op.operador=S.operador; S.queue.push(op); save(); render(); sync(); }
 
 /* ---------- acciones ---------- */
+const RO = () => S.role==='viewer';
 function checkIn(id){
+  if(RO()) return;
   const g=view().find(x=>x.id===id); if(!g||g.ingreso) return;
   enqueue({op:'in',id});
   if(navigator.vibrate) navigator.vibrate(40);
   toast(g.nombre, (isVip(g.sector)?'BACKSTAGE/VIP — PULSERA VIP':'GENERAL')+' · '+g.embajadora, isVip(g.sector)?'vip':'');
 }
 function undo(id){
+  if(RO()) return;
   if(ui.confirm!==id){ ui.confirm=id; render(); setTimeout(()=>{ if(ui.confirm===id){ui.confirm=null;render();} },3500); return; }
   ui.confirm=null; enqueue({op:'out',id}); toast('Ingreso anulado', view().find(x=>x.id===id)?.nombre||'', 'bad');
 }
@@ -285,7 +293,7 @@ function render(){
   $('#sBar').style.width=(all.length?inn/all.length*100:0)+'%';
   $('#sPend').textContent=all.length-inn;
   $('#sVip').textContent=all.filter(g=>g.ingreso&&isVip(g.sector)).length;
-  $('#opName').textContent=S.operador;
+  $('#opName').textContent=S.operador; applyRole();
   paintSync();
 
   const embs=[...new Set(all.map(g=>g.embajadora).filter(Boolean))].sort((a,b)=>norm(a).localeCompare(norm(b)));
@@ -308,12 +316,12 @@ function render(){
     if(ui.st==='in' && !qs.length) rows.sort((a,b)=>String(b.ingreso).localeCompare(String(a.ingreso)));
     $('#list').innerHTML = rows.length ? rows.map(g=>{
       const vip=isVip(g.sector);
-      const btn = g.ingreso
+      const btn = RO() ? (g.ingreso ? `<span class="act done ro">✓ ${hhmm(g.ingreso)}</span>` : `<span class="act ro pend">Pendiente</span>`) : g.ingreso
         ? (ui.confirm===g.id ? `<button class="act confirm" data-undo="${esc(g.id)}">¿Anular?</button>` : `<button class="act done" data-undo="${esc(g.id)}">✓ ${hhmm(g.ingreso)}</button>`)
         : `<button class="act in" data-in="${esc(g.id)}">INGRESÓ</button>`;
       return `<li class="g ${g.ingreso?'ok':''}"><div class="info"><div class="nm">${esc(g.nombre)}</div>
         <div class="sub"><span class="pill ${vip?'vip':''}">${vip?'Backstage/VIP':'General'}</span>${esc(g.embajadora)}${g.origen==='puerta'?' <span class="pill door">Puerta</span>':''}${g.ingreso&&g.operador?` <span class="when">· ${esc(g.operador)}</span>`:''}</div></div>${btn}</li>`;
-    }).join('') : `<li class="empty">${qs.length?'No está en la lista.<br><button class="btn" id="emptyAdd">+ Agregar "'+esc(ui.q)+'"</button>':(ui.st==='pend'?'No quedan pendientes 🎉':'Sin resultados')}</li>`;
+    }).join('') : `<li class="empty">${qs.length?(RO()?'No está en la lista.':'No está en la lista.<br><button class="btn" id="emptyAdd">+ Agregar "'+esc(ui.q)+'"</button>'):(ui.st==='pend'?'No quedan pendientes 🎉':'Sin resultados')}</li>`;
     const ea=$('#emptyAdd'); if(ea) ea.onclick=()=>openAdd(ui.q);
   } else renderLiq(all);
   const hh=$('#hdr').offsetHeight; document.documentElement.style.setProperty('--hh',hh+'px');
@@ -337,7 +345,7 @@ let tt;
 function toast(a,b,cls){ const t=$('#toast'); t.className='show '+(cls||''); $('#t1').textContent=a; $('#t2').textContent=b; clearTimeout(tt); tt=setTimeout(()=>t.className='',2600); }
 
 /* ---------- agregar ---------- */
-function openAdd(pref){ $('#aNom').value=pref||''; $('#aAut').value=''; $('#aErr').textContent=''; $('#aIn').checked=true; $('#addOv').classList.remove('hidden'); setTimeout(()=>$('#aNom').focus(),50); }
+function openAdd(pref){ if(RO()) return; $('#aNom').value=pref||''; $('#aAut').value=''; $('#aErr').textContent=''; $('#aIn').checked=true; $('#addOv').classList.remove('hidden'); setTimeout(()=>$('#aNom').focus(),50); }
 function closeAdd(){ $('#addOv').classList.add('hidden'); }
 $('#aCancel').onclick=closeAdd;
 $('#addOv').onclick=e=>{ if(e.target.id==='addOv') closeAdd(); };
@@ -427,14 +435,15 @@ $('#loginBtn').onclick=async()=>{
   $('#loginBtn').textContent='Verificando…';
   try{ const r=await fetch(API_URL+'?key='+encodeURIComponent(pin)).then(r=>r.json());
     if(!r.ok) throw new Error(r.error||'Error');
-    S.key=pin; S.operador=op; S.guests=r.guests; S.evento=r.evento; S.valor=r.valor||S.valor; S.lastSync=Date.now(); S.online=true; save(); start();
+    S.key=pin; S.role=r.role||'staff'; S.operador=op; S.guests=r.guests; S.evento=r.evento; S.valor=r.valor||S.valor; S.lastSync=Date.now(); S.online=true; save(); start();
   }catch(e){ $('#loginErr').textContent = e.message==='Failed to fetch'?'Sin conexión. Necesitás señal para el primer ingreso.':e.message; }
   $('#loginBtn').textContent='Entrar';
 };
 $('#pin').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#loginBtn').click(); });
 
 let timer;
-function start(){ $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); render(); sync(); clearInterval(timer); timer=setInterval(()=>{ if(!document.hidden) sync(); },POLL_MS); }
+function applyRole(){ document.body.classList.toggle('ro',RO()); }
+function start(){ applyRole(); if(RO() && ui.tab==='puerta'){ ui.tab='liq'; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab==='liq')); $('#puerta').classList.add('hidden'); $('#liq').classList.remove('hidden'); } $('#login').classList.add('hidden'); $('#app').classList.remove('hidden'); render(); sync(); clearInterval(timer); timer=setInterval(()=>{ if(!document.hidden) sync(); },POLL_MS); }
 
 load();
 if(S.key) start(); else showLogin();
