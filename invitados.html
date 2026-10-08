@@ -64,7 +64,8 @@ select.chip option{background:var(--card);color:var(--txt)}
 #list{padding:4px 16px 120px;list-style:none;display:flex;flex-direction:column;gap:8px}
 .g{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px}
 .g .info{flex:1;min-width:0}
-.g .nm{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g .nm{font-size:15px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g .nm b{font-weight:700}
 .g .sub{font-size:11px;color:var(--mut);margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .pill{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:999px;padding:2px 8px;color:var(--glow)}
 .pill.vip{background:linear-gradient(120deg,var(--purple),var(--purple-deep));color:#fff;border-color:var(--purple)}
@@ -209,6 +210,16 @@ const PRODUCCION = 'Producción (sin pago)';
 /* ====================================== */
 
 const $ = s => document.querySelector(s);
+const COMPUESTOS = ['san francisco','virgillo sosa','castro domenech','bianchi igoa','gonzalez ali','meza velazquez','martinez buiwof'];
+const PARTICULAS = ['de','di','del','da','la','san','van','von'];
+function splitNombre(n){
+  const w=(n||'').replace(/ · /g,' ').trim().split(/\s+/); if(w.length<2) return {ap:w[0]||'',no:''};
+  const nn=norm(w.join(' '));
+  const c=COMPUESTOS.find(x=>nn.endsWith(' '+x)); if(c){ const k=c.split(' ').length; return {ap:w.slice(-k).join(' '),no:w.slice(0,-k).join(' ')}; }
+  let i=w.length-1; while(i>1 && PARTICULAS.includes(w[i-1].toLowerCase())) i--;
+  return {ap:w.slice(i).join(' '),no:w.slice(0,i).join(' ')};
+}
+const apKey = g => { const p=splitNombre(g.nombre); return norm(p.ap+' '+p.no); };
 const norm = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => '$ ' + Math.round(n).toLocaleString('es-AR');
@@ -232,7 +243,7 @@ function view(){
     if(op.op==='in' && !g.ingreso){ g.ingreso=op.ts; g.operador=op.operador; g.pending=true; }
     if(op.op==='out'){ g.ingreso=''; g.operador=''; g.pending=true; }
   }
-  return [...map.values()].sort((a,b)=>norm(a.nombre).localeCompare(norm(b.nombre)));
+  return [...map.values()].sort((a,b)=>apKey(a).localeCompare(apKey(b)));
 }
 
 /* ---------- red ---------- */
@@ -319,7 +330,7 @@ function render(){
       const btn = RO() ? (g.ingreso ? `<span class="act done ro">✓ ${hhmm(g.ingreso)}</span>` : `<span class="act ro pend">Pendiente</span>`) : g.ingreso
         ? (ui.confirm===g.id ? `<button class="act confirm" data-undo="${esc(g.id)}">¿Anular?</button>` : `<button class="act done" data-undo="${esc(g.id)}">✓ ${hhmm(g.ingreso)}</button>`)
         : `<button class="act in" data-in="${esc(g.id)}">INGRESÓ</button>`;
-      return `<li class="g ${g.ingreso?'ok':''}"><div class="info"><div class="nm">${esc(g.nombre)}</div>
+      return `<li class="g ${g.ingreso?'ok':''}"><div class="info"><div class="nm">${(p=>`<b>${esc(p.ap)}</b>${p.no?', '+esc(p.no):''}`)(splitNombre(g.nombre))}</div>
         <div class="sub"><span class="pill ${vip?'vip':''}">${vip?'Backstage/VIP':'General'}</span>${esc(g.embajadora)}${g.origen==='puerta'?' <span class="pill door">Puerta</span>':''}${g.ingreso&&g.operador?` <span class="when">· ${esc(g.operador)}</span>`:''}</div></div>${btn}</li>`;
     }).join('') : `<li class="empty">${qs.length?(RO()?'No está en la lista.':'No está en la lista.<br><button class="btn" id="emptyAdd">+ Agregar "'+esc(ui.q)+'"</button>'):(ui.st==='pend'?'No quedan pendientes 🎉':'Sin resultados')}</li>`;
     const ea=$('#emptyAdd'); if(ea) ea.onclick=()=>openAdd(ui.q);
