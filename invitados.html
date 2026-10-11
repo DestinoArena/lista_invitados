@@ -125,7 +125,7 @@ body.ro .fab{display:none!important}
   <h1>Control de <span>invitados</span></h1>
   <div class="lcard">
   <div class="field"><label for="op">Tu nombre</label><input id="op" autocomplete="name" placeholder="Ej: Fede"></div>
-  <div class="field"><label for="pin">PIN del evento</label><input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••"></div>
+  <div class="field"><label for="pin">PIN del evento</label><input id="pin" type="text" name="pin-evento" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore placeholder="PIN del evento" style="-webkit-text-security:disc"></div>
   <div class="err" id="loginErr"></div>
   <button class="btn" id="loginBtn">Entrar</button>
   </div>
@@ -439,7 +439,7 @@ function logout(msg){
 }
 function showLogin(msg){ $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#op').value=S.operador||''; $('#loginErr').textContent=msg||''; }
 $('#loginBtn').onclick=async()=>{
-  const op=$('#op').value.trim(), pin=$('#pin').value.trim();
+  const op=$('#op').value.trim(), pin=$('#pin').value.replace(/\s+/g,'');
   if(!op) return $('#loginErr').textContent='Poné tu nombre (queda registrado en cada ingreso).';
   if(!pin) return $('#loginErr').textContent='Ingresá el PIN.';
   if(API_URL.startsWith('PEGAR')) return $('#loginErr').textContent='Falta configurar API_URL en el archivo.';
